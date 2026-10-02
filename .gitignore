@@ -1,0 +1,5 @@
+# Chặn khóa riêng tư (private key), chỉ cho phép khóa công khai (.pub)
+id_*
+!*.pub
+*.pem
+*.ppk

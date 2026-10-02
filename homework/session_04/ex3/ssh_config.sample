@@ -1,0 +1,7 @@
+# Khối cấu hình mẫu cho ~/.ssh/config (Linux/macOS/Git Bash: ~/.ssh/config,
+# Windows: C:\Users\<tên_người_dùng>\.ssh\config)
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_github
+    IdentitiesOnly yes

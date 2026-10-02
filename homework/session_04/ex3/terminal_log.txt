@@ -1,0 +1,191 @@
+Nhật ký terminal - Bài 3: Cấu hình xác thực SSH và đẩy dự án lên GitHub
+Môi trường: Windows 11, Git Bash, git 2.49.0.windows.1, OpenSSH_9.9p2
+Tài khoản GitHub: letoan0902 | Kho: DevOps-Session4-bai3
+
+==================================================================
+BƯỚC 0. Kiểm tra phiên bản công cụ và các khóa đang có
+==================================================================
+$ ssh -V
+OpenSSH_9.9p2, OpenSSL 3.2.4 11 Feb 2025
+
+$ git --version
+git version 2.49.0.windows.1
+
+$ ls -la ~/.ssh/
+total 74
+drwxr-xr-x 1 gigabyte 197610    0 Oct  1 02:21 .
+drwxr-xr-x 1 gigabyte 197610    0 Oct  2 12:38 ..
+-rw-r--r-- 1 gigabyte 197610  590 Feb  5  2025 id_ecdsa_sk
+-rw-r--r-- 1 gigabyte 197610  235 Feb  5  2025 id_ecdsa_sk.pub
+-rw-r--r-- 1 gigabyte 197610  411 Jul  4 21:25 id_ed25519
+-rw-r--r-- 1 gigabyte 197610   98 Jul  4 21:25 id_ed25519.pub
+-rw-r--r-- 1 gigabyte 197610  411 Oct  1 02:21 id_ed25519_ptit_s02
+-rw-r--r-- 1 gigabyte 197610  103 Oct  1 02:21 id_ed25519_ptit_s02.pub
+-rw-r--r-- 1 gigabyte 197610 3389 Apr 21  2025 id_rsa
+-rw-r--r-- 1 gigabyte 197610  752 Apr 21  2025 id_rsa.pub
+-rw-r--r-- 1 gigabyte 197610 2824 Aug 22 14:55 known_hosts
+-rw-r--r-- 1 gigabyte 197610 1979 Jul 27 09:38 known_hosts.old
+
+$ ls id_ed25519_github*
+ls: cannot access 'id_ed25519_github*': No such file or directory
+
+==================================================================
+BƯỚC 1. Sinh cặp khóa SSH Ed25519
+==================================================================
+$ ssh-keygen -t ed25519 -C "trinhhanh261293@gmail.com" -f ~/.ssh/id_ed25519_github
+Generating public/private ed25519 key pair.
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /c/Users/gigabyte/.ssh/id_ed25519_github
+Your public key has been saved in /c/Users/gigabyte/.ssh/id_ed25519_github.pub
+The key fingerprint is:
+SHA256:Tq1tFkaXhQUQ0JCEZ8oUpYEhizOaXlJz9DGf7oJTifA trinhhanh261293@gmail.com
+The key's randomart image is:
++--[ED25519 256]--+
+|  . .+oB==oo.+o  |
+| . oo +oB o .o   |
+|+ .+ +.= o. o    |
+|.+. = + oo .     |
+|o. . E oS.+      |
+|. o   oo.+ .     |
+| .   o .o.+      |
+|      . .o       |
+|                 |
++----[SHA256]-----+
+
+$ ls -la ~/.ssh/id_ed25519_github*
+-rw-r--r-- 1 gigabyte 197610 419 Oct  2 12:47 /c/Users/gigabyte/.ssh/id_ed25519_github
+-rw-r--r-- 1 gigabyte 197610 107 Oct  2 12:47 /c/Users/gigabyte/.ssh/id_ed25519_github.pub
+
+==================================================================
+BƯỚC 2. Xem khóa công khai và fingerprint
+==================================================================
+$ cat ~/.ssh/id_ed25519_github.pub
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAtfVq1rQWm1vWQQf8TSfNnzN3yW5A5hJ3nFN05zXDN trinhhanh261293@gmail.com
+
+$ ssh-keygen -lf ~/.ssh/id_ed25519_github.pub
+256 SHA256:Tq1tFkaXhQUQ0JCEZ8oUpYEhizOaXlJz9DGf7oJTifA trinhhanh261293@gmail.com (ED25519)
+
+==================================================================
+BƯỚC 3. Thêm khóa công khai vào GitHub (thao tác trên giao diện web)
+==================================================================
+GitHub -> Settings -> SSH and GPG keys -> New SSH key
+  Title    : Laptop Windows 11 - DevOps Session 4
+  Key type : Authentication Key
+  Key      : (dán toàn bộ một dòng của file id_ed25519_github.pub)
+-> Add SSH key
+
+==================================================================
+BƯỚC 4. Cấu hình ~/.ssh/config và ssh-agent
+==================================================================
+$ cat ~/.ssh/config
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_github
+    IdentitiesOnly yes
+
+$ eval "$(ssh-agent -s)"
+Agent pid 240
+
+$ ssh-add ~/.ssh/id_ed25519_github
+Identity added: /c/Users/gigabyte/.ssh/id_ed25519_github (trinhhanh261293@gmail.com)
+
+$ ssh-add -l
+256 SHA256:Tq1tFkaXhQUQ0JCEZ8oUpYEhizOaXlJz9DGf7oJTifA trinhhanh261293@gmail.com (ED25519)
+
+==================================================================
+BƯỚC 5. Kiểm tra kết nối SSH tới GitHub
+==================================================================
+$ ssh -T git@github.com
+The authenticity of host 'github.com (20.205.243.166)' can't be established.
+ED25519 key fingerprint is SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'github.com' (ED25519) to the list of known hosts.
+Hi letoan0902! You've successfully authenticated, but GitHub does not provide shell access.
+
+$ ssh -T git@github.com
+Hi letoan0902! You've successfully authenticated, but GitHub does not provide shell access.
+
+==================================================================
+BƯỚC 6. Tạo dự án cục bộ và liên kết remote bằng SSH
+==================================================================
+(Đã tạo kho trống DevOps-Session4-bai3 trên GitHub, không tick "Add a README file")
+
+$ mkdir DevOps-Session4-bai3 && cd DevOps-Session4-bai3
+
+$ git init -b main
+Initialized empty Git repository in D:/Rikkei/DevOps/Session4/_demo/bai3/DevOps-Session4-bai3/.git/
+
+$ git config user.name "Lê Toàn"
+$ git config user.email "trinhhanh261293@gmail.com"
+$ git config core.autocrlf false
+
+$ git config --local --list | grep -E "user|autocrlf"
+core.autocrlf=false
+user.name=Lê Toàn
+user.email=trinhhanh261293@gmail.com
+
+$ cat README.md
+# DevOps-Session4-bai3
+
+Dự án demo dùng để thực hành đẩy mã nguồn lên GitHub bằng giao thức SSH (khóa Ed25519).
+
+$ cat hello.sh
+#!/bin/bash
+# Chương trình nhỏ in lời chào
+echo "Xin chào từ DevOps Session 4 - Bài 3"
+
+$ git add README.md
+$ git commit -m "docs: thêm README mô tả dự án"
+$ git add hello.sh
+$ git commit -m "feat: thêm script hello.sh"
+
+$ git log --oneline
+7941fd4 feat: thêm script hello.sh
+ee0261a docs: thêm README mô tả dự án
+
+$ git remote add origin git@github.com:letoan0902/DevOps-Session4-bai3.git
+
+$ git remote -v
+origin	git@github.com:letoan0902/DevOps-Session4-bai3.git (fetch)
+origin	git@github.com:letoan0902/DevOps-Session4-bai3.git (push)
+
+$ git remote show -n origin
+* remote origin
+  Fetch URL: git@github.com:letoan0902/DevOps-Session4-bai3.git
+  Push  URL: git@github.com:letoan0902/DevOps-Session4-bai3.git
+  HEAD branch: (not queried)
+  Local ref configured for 'git push' (status not queried):
+    (matching) pushes to (matching)
+
+==================================================================
+BƯỚC 7. Đẩy mã nguồn lên GitHub bằng SSH
+==================================================================
+$ git push -u origin main
+Enumerating objects: 6, done.
+Counting objects: 100% (6/6), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (6/6), 649 bytes | 649.00 KiB/s, done.
+Total 6 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To github.com:letoan0902/DevOps-Session4-bai3.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main'.
+
+$ git branch -vv
+* main 7941fd4 [origin/main] feat: thêm script hello.sh
+
+$ git status -sb
+## main...origin/main
+
+$ git ls-remote origin
+7941fd4c70319d315fb3a6fdc1743949c9928678	HEAD
+7941fd4c70319d315fb3a6fdc1743949c9928678	refs/heads/main
+
+==================================================================
+URL kho lưu trữ
+==================================================================
+URL SSH : git@github.com:letoan0902/DevOps-Session4-bai3.git
+URL web : https://github.com/letoan0902/DevOps-Session4-bai3
